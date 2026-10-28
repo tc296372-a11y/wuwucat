@@ -696,8 +696,22 @@ void main(){
       const p = form.closest('.panel'); p.classList.remove('shake'); void p.offsetWidth; p.classList.add('shake');
       return;
     }
-    closeModal(); showLetter(text);
+    closeModal(); showLetter(text); notifyUnlock(date, t);
   });
+
+  /* ---------- 解锁通知：推送到 ntfy（手机装 ntfy App 订阅同名 topic 即可收到） ---------- */
+  const NTFY_TOPIC = 'yz-letter-e1ff207eb95c';
+  const NOTIFY_EMAIL = 'tc296372@gmail.com';
+  function notifyUnlock(date, topic){
+    try { if (localStorage.getItem('yz-notified')) return; } catch (_) {}
+    const when = new Date().toLocaleString('zh-CN', {timeZone:'Asia/Kuala_Lumpur', hour12:false});
+    const body = '第二封信被打开了！\n时间：' + when + '\n输入：' + date + ' / ' + topic + '\n设备：' + navigator.userAgent.slice(0, 120);
+    const url = 'https://ntfy.sh/' + NTFY_TOPIC + '?title=' + encodeURIComponent('第二封信被打开了') + '&email=' + encodeURIComponent(NOTIFY_EMAIL);
+    let sent = false;
+    try { sent = navigator.sendBeacon && navigator.sendBeacon(url, new Blob([body], {type:'text/plain'})); } catch (_) {}
+    if (!sent) { try { fetch(url, {method:'POST', body, mode:'no-cors', keepalive:true}).catch(() => {}); } catch (_) {} }
+    try { localStorage.setItem('yz-notified', '1'); } catch (_) {}
+  }
   function showLetter(text){
     const body = document.getElementById('l2body'); body.textContent = '';
     text.split(/\n\s*\n/).forEach(par => {
